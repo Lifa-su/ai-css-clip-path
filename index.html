@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI CSS Clip-Path Generator</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#1a1a2e;--bg2:#16213e;--bg3:#0f3460;--accent:#e94560;--accent2:#533483;--text:#eee;--text2:#aab;--rad:12px}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.hdr{text-align:center;padding:24px 16px 8px}
+.hdr h1{font-size:1.7rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2),#e94560);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hdr p{color:var(--text2);font-size:.88rem;margin-top:4px}
+.app{display:grid;grid-template-columns:230px 1fr 290px;gap:14px;padding:16px 20px 32px;max-width:1340px;margin:0 auto}
+@media(max-width:1100px){.app{grid-template-columns:1fr;max-width:580px}}
+.pnl{background:var(--bg2);border-radius:var(--rad);padding:14px;box-shadow:0 4px 20px rgba(0,0,0,.35)}
+.pt{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:10px;font-weight:600}
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pbtn{background:var(--bg);border:1.5px solid #2a2a4a;border-radius:8px;color:var(--text);padding:9px 4px;cursor:pointer;font-size:.73rem;transition:all .18s;text-align:center}
+.pbtn:hover{border-color:var(--accent);background:#1e1e3a}
+.pbtn.on{border-color:var(--accent);background:rgba(233,69,96,.12)}
+.cbox{position:relative;width:100%;aspect-ratio:1;background:var(--bg);border-radius:var(--rad);overflow:hidden;border:1.5px solid #2a2a4a}
+.pvbg{position:absolute;inset:0;background:linear-gradient(135deg,#667eea,#764ba2,#f093fb,#f5576c,#4facfe);background-size:200% 200%;animation:gs 8s ease infinite}
+@keyframes gs{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.pvclip{position:absolute;inset:0}
+.esvg{position:absolute;inset:0;width:100%;height:100%;z-index:2}
+.tbar{display:flex;gap:6px;flex-wrap:wrap}
+.tb{background:var(--bg);border:1.5px solid #2a2a4a;border-radius:8px;color:var(--text);padding:6px 12px;cursor:pointer;font-size:.76rem;transition:all .18s}
+.tb:hover{border-color:var(--accent);background:#1e1e3a}
+.cblk{background:var(--bg);border-radius:8px;padding:12px;font-family:'SF Mono',Consolas,monospace;font-size:.78rem;line-height:1.6;color:#e94560;word-break:break-all;position:relative;border:1.5px solid #2a2a4a;min-height:60px;white-space:pre-wrap}
+.cpb{position:absolute;top:8px;right:8px;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.72rem;font-weight:600;transition:all .2s}
+.cpb:hover{background:#d63851}
+.cpb.ok{background:#27ae60}
+.plst{max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:3px}
+.plst::-webkit-scrollbar{width:4px}
+.plst::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+.pti{display:flex;align-items:center;gap:6px;padding:4px 8px;background:var(--bg);border-radius:6px;font-size:.73rem;font-family:monospace;border:1px solid #2a2a4a}
+.pti .i{color:var(--accent);font-weight:700;min-width:16px}
+.pti .c{flex:1;color:var(--text2)}
+.pti .d{background:none;border:none;color:#555;cursor:pointer;font-size:.85rem;padding:0 2px}
+.pti .d:hover{color:var(--accent)}
+.pvmini{width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;border:1.5px solid #2a2a4a;background:linear-gradient(135deg,#667eea,#764ba2,#f093fb,#f5576c,#4facfe);background-size:200% 200%;animation:gs 8s ease infinite}
+.irow{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #2a2a4a;font-size:.78rem}
+.irow:last-child{border:none}
+.il{color:var(--text2)}
+.iv{font-weight:600}
+.ftr{text-align:center;padding:20px;color:#444;font-size:.73rem}
+.grid-line{stroke:#ffffff10;stroke-width:.5}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1>✂️ AI CSS Clip-Path Generator</h1>
+  <p>Visually create CSS clip-path shapes — drag points, pick presets, copy code</p>
+</div>
+<div class="app">
+  <div class="pnl">
+    <div class="pt">Preset Shapes</div>
+    <div class="presets" id="pg"></div>
+    <div style="margin-top:14px">
+      <div class="pt">Control Points</div>
+      <div class="plst" id="pl"></div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="cbox" id="cbox">
+      <div class="pvbg"></div>
+      <div class="pvclip" id="pvclip"></div>
+      <svg class="esvg" id="esvg"></svg>
+    </div>
+    <div class="tbar">
+      <button class="tb" onclick="addPt()">➕ Add Point</button>
+      <button class="tb" onclick="resetShape()">🔄 Reset</button>
+      <button class="tb" onclick="undo()">↩️ Undo</button>
+      <button class="tb" onclick="togGrid()">📐 Grid</button>
+    </div>
+  </div>
+  <div class="pnl" style="display:flex;flex-direction:column;gap:12px">
+    <div>
+      <div class="pt">Generated CSS</div>
+      <div class="cblk" id="cout"></div>
+      <button class="cpb" onclick="copyCSS()">Copy</button>
+    </div>
+    <div>
+      <div class="pt">Preview</div>
+      <div class="pvmini" id="pvmini"></div>
+    </div>
+    <div>
+      <div class="pt">Info</div>
+      <div class="irow"><span class="il">Points</span><span class="iv" id="ipts">0</span></div>
+      <div class="irow"><span class="il">Shape</span><span class="iv" id="ishp">Custom</span></div>
+    </div>
+  </div>
+</div>
+<div class="ftr">AI CSS Clip-Path Generator — Built with ❤️</div>
+<script>
+const PRESETS={
+  triangle:[[50,5],[95,95],[5,95]],
+  rectangle:[[5,5],[95,5],[95,95],[5,95]],
+  pentagon:[[50,5],[97,38],[79,95],[21,95],[3,38]],
+  hexagon:[[50,2],[93,25],[93,75],[50,98],[7,75],[7,25]],
+  star:[[50,0],[61,35],[98,35],[68,57],[79,91],[50,70],[21,91],[32,57],[2,35],[39,35]],
+  arrow:[[40,0],[80,0],[100,50],[80,100],[40,100],[60,50]],
+  cross:[[35,0],[65,0],[65,35],[100,35],[100,65],[65,65],[65,100],[35,100],[35,65],[0,65],[0,35],[35,35]],
+  heart:[[50,18],[65,2],[85,2],[100,18],[100,42],[50,95],[0,42],[0,18],[15,2],[35,2]],
+  diamond:[[50,0],[100,50],[50,100],[0,50]],
+  parallelogram:[[25,0],[100,0],[75,100],[0,100]],
+  trapezoid:[[20,0],[80,0],[100,100],[0,100]],
+  circle8:[[50,0],[85,15],[100,50],[85,85],[50,100],[15,85],[0,50],[15,15]]
+};
+const LABELS={triangle:'▲ Triangle',rectangle:'▬ Rectangle',pentagon:'⬠ Pentagon',hexagon:'⬡ Hexagon',star:'★ Star',arrow:'➤ Arrow',cross:'✚ Cross',heart:'♥ Heart',diamond:'◆ Diamond',parallelogram:'▱ Parallel',trapezoid:'⏢ Trapezoid',circle8:'● Circle'};
+let pts=[],history=[],activePreset='',showGrid=false,dragIdx=-1,svgEl,pvClip,pvMini;
+function init(){
+  svgEl=document.getElementById('esvg');
+  pvClip=document.getElementById('pvclip');
+  pvMini=document.getElementById('pvmini');
+  const pg=document.getElementById('pg');
+  Object.keys(PRESETS).forEach(k=>{
+    const b=document.createElement('button');
+    b.className='pbtn';b.textContent=LABELS[k];b.dataset.key=k;
+    b.onclick=()=>loadPreset(k);pg.appendChild(b);
+  });
+  loadPreset('star');
+  svgEl.addEventListener('pointerdown',onDown);
+  window.addEventListener('pointermove',onMove);
+  window.addEventListener('pointerup',onUp);
+  svgEl.addEventListener('dblclick',onDblClick);
+}
+function loadPreset(k){
+  pushHistory();activePreset=k;
+  pts=PRESETS[k].map(p=>({x:p[0],y:p[1]}));
+  document.querySelectorAll('.pbtn').forEach(b=>b.classList.toggle('on',b.dataset.key===k));
+  render();
+}
+function pushHistory(){history.push(JSON.stringify(pts));if(history.length>40)history.shift();}
+function undo(){if(!history.length)return;pts=JSON.parse(history.pop());activePreset='';document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('on'));render();}
+function resetShape(){loadPreset(activePreset||'star');}
+function addPt(){
+  pushHistory();
+  if(pts.length<2){pts.push({x:50,y:50});render();return;}
+  const a=pts[pts.length-1],b=pts[0];
+  pts.push({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
+  activePreset='';document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('on'));
+  render();
+}
+function delPt(i){if(pts.length<=3)return;pushHistory();pts.splice(i,1);render();}
+function togGrid(){showGrid=!showGrid;render();}
+function polyStr(){return pts.map(p=>`${r(p.x)}% ${r(p.y)}%`).join(', ');}
+function r(v){return Math.round(v*100)/100;}
+function cssStr(){return `clip-path: polygon(${polyStr()});`;}
+function render(){
+  const w=svgEl.clientWidth||400,h=svgEl.clientHeight||400;
+  let svg='';
+  if(showGrid){for(let i=0;i<=100;i+=10){const x=i/100*w,y=i/100*h;svg+=`<line x1="${x}" y1="0" x2="${x}" y2="${h}" class="grid-line"/><line x1="0" y1="${y}" x2="${w}" y2="${y}" class="grid-line"/>`;}}
+  if(pts.length>1){
+    const polyPts=pts.map(p=>`${p.x/100*w},${p.y/100*h}`).join(' ');
+    svg+=`<polygon points="${polyPts}" fill="rgba(233,69,96,.08)" stroke="rgba(233,69,96,.5)" stroke-width="1.5" stroke-dasharray="6 3"/>`;
+    for(let i=0;i<pts.length;i++){
+      const j=(i+1)%pts.length,mx=(pts[i].x+pts[j].x)/2,my=(pts[i].y+pts[j].y)/2;
+      svg+=`<circle cx="${mx/100*w}" cy="${my/100*h}" r="5" fill="#533483" opacity=".35" style="cursor:pointer" data-mid="${i}"/>`;
+    }
+  }
+  pts.forEach((p,i)=>{
+    const cx=p.x/100*w,cy=p.y/100*h;
+    svg+=`<circle cx="${cx}" cy="${cy}" r="6" fill="var(--accent)" stroke="#fff" stroke-width="1.5" style="cursor:grab" data-idx="${i}"/>`;
+    svg+=`<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="8" font-weight="700" pointer-events="none">${i}</text>`;
+  });
+  svgEl.innerHTML=svg;
+  const clip=`polygon(${polyStr()})`;
+  pvClip.style.clipPath=clip;
+  pvClip.style.background='repeating-conic-gradient(#2a2a4a 0% 25%, #1a1a2e 0% 50%) 0 0/20px 20px';
+  pvMini.style.clipPath=clip;
+  document.getElementById('cout').textContent=cssStr();
+  document.getElementById('ipts').textContent=pts.length;
+  document.getElementById('ishp').textContent=activePreset?LABELS[activePreset]:'Custom';
+  const pl=document.getElementById('pl');
+  pl.innerHTML=pts.map((p,i)=>`<div class="pti"><span class="i">${i}</span><span class="c">${r(p.x)}%, ${r(p.y)}%</span><button class="d" onclick="delPt(${i})">✕</button></div>`).join('');
+}
+function getSvgPos(e){const rc=svgEl.getBoundingClientRect();return{x:Math.max(0,Math.min(100,(e.clientX-rc.left)/rc.width*100)),y:Math.max(0,Math.min(100,(e.clientY-rc.top)/rc.height*100))};}
+function onDown(e){
+  const t=e.target;
+  if(t.dataset.idx!==undefined){pushHistory();dragIdx=+t.dataset.idx;t.style.cursor='grabbing';svgEl.setPointerCapture(e.pointerId);e.preventDefault();return;}
+  if(t.dataset.mid!==undefined){pushHistory();const i=+t.dataset.mid,j=(i+1)%pts.length;const np={x:(pts[i].x+pts[j].x)/2,y:(pts[i].y+pts[j].y)/2};pts.splice(j,0,np);activePreset='';document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('on'));dragIdx=j;render();svgEl.setPointerCapture(e.pointerId);e.preventDefault();}
+}
+function onMove(e){if(dragIdx<0)return;const p=getSvgPos(e);pts[dragIdx].x=p.x;pts[dragIdx].y=p.y;activePreset='';render();}
+function onUp(){dragIdx=-1;}
+function onDblClick(e){
+  const t=e.target;
+  if(t.dataset.idx!==undefined&&pts.length>3){pushHistory();pts.splice(+t.dataset.idx,1);render();return;}
+  pushHistory();const p=getSvgPos(e);
+  let bestI=0,bestD=Infinity;
+  for(let i=0;i<pts.length;i++){
+    const j=(i+1)%pts.length,mx=(pts[i].x+pts[j].x)/2,my=(pts[i].y+pts[j].y)/2;
+    const d=Math.hypot(p.x-mx,p.y-my);if(d<bestD){bestD=d;bestI=j;}
+  }
+  pts.splice(bestI,0,p);activePreset='';document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('on'));render();
+}
+function copyCSS(){
+  navigator.clipboard.writeText(cssStr()).then(()=>{
+    const b=document.querySelector('.cpb');b.textContent='Copied!';b.classList.add('ok');
+    setTimeout(()=>{b.textContent='Copy';b.classList.remove('ok');},1500);
+  });
+}
+function exportSVG(){
+  const w=400,h=400,polyPts=pts.map(p=>`${p.x/100*w},${p.y/100*h}`).join(' ');
+  const s=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><polygon points="${polyPts}" fill="#e94560"/></svg>`;
+  const b=new Blob([s],{type:'image/svg+xml'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='clip-path.svg';a.click();
+}
+init();
+</script>
+<script src="https://aliyun.feifei.im/monetize.js"></script>
+</body>
+</html>
